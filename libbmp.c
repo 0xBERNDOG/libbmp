@@ -1,6 +1,7 @@
 /* Copyright 2016 - 2017 Marc Volker Dickmann
  * Project: LibBMP
  */
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "libbmp.h"
@@ -152,7 +153,7 @@ bmp_img_write (const bmp_img *img,
 	
 	// Select the mode (bottom-up or top-down):
 	const size_t h = abs (img->img_header.biHeight);
-	const size_t offset = (img->img_header.biHeight > 0 ? h - 1 : 0);
+	const bool bottom_up = (img->img_header.biHeight > 0);
 	
 	// Create the padding:
 	const unsigned char padding[3] = {'\0', '\0', '\0'};
@@ -161,7 +162,8 @@ bmp_img_write (const bmp_img *img,
 	for (size_t y = 0; y < h; y++)
 	{
 		// Write a whole row of pixels to the file:
-		fwrite (img->img_pixels[abs (offset - y)], sizeof (bmp_pixel), img->img_header.biWidth, img_file);
+		size_t index = bottom_up ? h - 1 - y : y;
+		fwrite (img->img_pixels[index], sizeof (bmp_pixel), img->img_header.biWidth, img_file);
 		
 		// Write the padding for the row!
 		fwrite (padding, sizeof (unsigned char), BMP_GET_PADDING (img->img_header.biWidth), img_file);
@@ -197,7 +199,7 @@ bmp_img_read (bmp_img    *img,
 	
 	// Select the mode (bottom-up or top-down):
 	const size_t h = abs (img->img_header.biHeight);
-	const size_t offset = (img->img_header.biHeight > 0 ? h - 1 : 0);
+	const bool bottom_up = (img->img_header.biHeight > 0);
 	const size_t padding = BMP_GET_PADDING (img->img_header.biWidth);
 	
 	// Needed to compare the return value of fread
@@ -207,7 +209,8 @@ bmp_img_read (bmp_img    *img,
 	for (size_t y = 0; y < h; y++)
 	{
 		// Read a whole row of pixels from the file:
-		if (fread (img->img_pixels[abs (offset - y)], sizeof (bmp_pixel), items, img_file) != items)
+		size_t index = bottom_up ? h - 1 - y : y;
+		if (fread (img->img_pixels[index], sizeof (bmp_pixel), items, img_file) != items)
 		{
 			fclose (img_file);
 			return BMP_ERROR;
